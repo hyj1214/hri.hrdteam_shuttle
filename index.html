@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>셔틀버스 엑셀 연동 탑승 체크 시스템</title>
+  <title>스마트 셔틀버스 탑승 관리 시스템</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
   <style>
     :root {
@@ -21,100 +21,209 @@
       font-family: Pretendard, sans-serif;
       color: var(--text);
     }
-    body { margin: 0; background: var(--bg); padding-bottom: 40px; }
-    header { background: var(--card); border-bottom: 1px solid var(--line); padding: 16px; position: sticky; top: 0; z-index: 10; }
-    h1 { margin: 0; font-size: 18px; font-weight: 800; color: #111827; }
-    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
-    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
+    
+    .wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
+    
+    header { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; height: 35px; }
+    header h1 { margin: 0; font-size: 16px; font-weight: 800; }
+
+    /* 좌측 사이드바 */
+    .sidebar { width: 260px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 16px; box-sizing: border-box; }
+    .sidebar h3 { margin-top: 0; font-size: 14px; color: var(--muted); margin-bottom: 12px; font-weight: 700; }
+    .shuttle-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
+    .shuttle-item { padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
+    .shuttle-item:hover { background: #fafafa; }
+    .shuttle-item.active { background: var(--blueBg); color: var(--blue); border-color: var(--blue); }
+    .btn-del { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 14px; padding: 0 4px; }
+    .btn-del:hover { color: var(--red); }
+    .btn-add-shuttle { width: 100%; padding: 10px; background: #f3f4f6; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 12px; text-align: center; }
+    .btn-add-shuttle:hover { background: #e5e7eb; }
+
+    /* 우측 영역 */
+    .main-content { flex: 1; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+    .container { max-width: 600px; margin: 0 auto; }
     .page { display: none; }
     .page.active { display: block; }
+
+    /* 폼 및 박스 스타일 */
     .setup-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
     .setup-box h2 { margin-top: 0; font-size: 18px; font-weight: 800; color: var(--blue); }
-    .paste-area { width: 100%; height: 200px; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 13px; resize: none; outline: none; background: #f8fafc; font-family: monospace; }
-    .btn-generate { width: 100%; padding: 14px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px; }
-    .controls { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
-    .search-bar { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; box-sizing: border-box; font-size: 14px; outline: none; }
-    .tabs { display: flex; gap: 6px; overflow-x: auto; }
-    .tab { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 12px; cursor: pointer; white-space: nowrap; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--muted); }
+    .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
+    .paste-area { width: 100%; height: 160px; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 13px; resize: none; outline: none; background: #f8fafc; font-family: monospace; }
+    .btn-generate { width: 100%; padding: 14px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; }
+    
+    /* 대시보드 구조 */
+    .dashboard-header { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
+    .dashboard-title-area { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
+    .dashboard-title { font-size: 18px; font-weight: 800; margin: 0; }
+    .btn-append { background: #10b981; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .btn-append:hover { background: #059669; }
+    .sub-summary { font-size: 12px; color: var(--muted); }
+    .controls { display: flex; flex-direction: column; gap: 8px; margin-top: 12px; }
+    .search-bar { width: 100%; padding: 10px; border: 1px solid #d1d5db; border-radius: 8px; box-sizing: border-box; font-size: 13px; outline: none; }
+    .tabs { display: flex; gap: 4px; overflow-x: auto; }
+    .tab { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; }
     .tab.active { background: var(--blue); color: white; border-color: var(--blue); }
-    .badge { background: #e5e7eb; color: #1f2937; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; }
-    .tab.active .badge { background: rgba(255,255,255,0.3); color: white; }
-    .list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
-    .roster-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
-    .roster-card.canceled { background: #f3f4f6; opacity: 0.7; }
-    .roster-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .roster-title { display: flex; align-items: center; gap: 8px; }
-    .badge-no { background: #e5e7eb; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; }
-    .user-name { font-size: 16px; font-weight: 800; }
-    .status-badge { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+    
+    /* 카드 디자인 */
+    .list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
+    .roster-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .roster-card.canceled { background: #f3f4f6; opacity: 0.6; }
+    .roster-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+    .user-name { font-size: 15px; font-weight: 800; }
+    .status-badge { font-size: 11px; font-weight: 700; padding: 2px 6px; border-radius: 4px; }
     .status-none { background: #f3f4f6; color: #4b5563; }
     .status-arrived { background: var(--greenBg); color: var(--green); }
     .status-cancel { background: var(--redBg); color: var(--red); }
-    .grid-action { display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 8px; margin-top: 12px; background: #fafafa; padding: 10px; border-radius: 10px; border: 1px solid #f0f0f0; }
-    .action-item label { display: block; font-size: 10px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
-    .grid-action input, .grid-action select, .grid-action textarea { width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; outline: none; background: #fff; }
-    .phone-link { font-size: 13px; color: var(--blue); text-decoration: none; font-weight: 600; }
-    .btn-reset { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; float: right; margin-top: -4px; }
-    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; background: white; border-radius: 14px; border: 1px dashed #cbd5e1; }
+    .grid-action { display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 6px; margin-top: 10px; background: #fafafa; padding: 8px; border-radius: 8px; border: 1px solid #f0f0f0; }
+    .grid-action label { display: block; font-size: 9px; color: var(--muted); font-weight: 700; margin-bottom: 2px; }
+    .grid-action input, .grid-action select, .grid-action textarea { width: 100%; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; box-sizing: border-box; outline: none; background: #fff; }
+    .phone-link { font-size: 12px; color: var(--blue); text-decoration: none; font-weight: 600; }
+    .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; }
+
+    /* 모달 레이어 (실시간 추가 팝업) */
+    .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
+    .modal-overlay.active { display: flex; }
+    .modal-box { background: white; width: 90%; max-width: 450px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
+    .modal-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; font-weight: 800; color: var(--blue); }
+    .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
+    .btn-close { background: #e5e7eb; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+    .btn-submit { background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
+
+    @media (max-width: 768px) {
+      body { overflow: auto; height: auto; }
+      .wrapper { flex-direction: column; height: auto; overflow: visible; }
+      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line); height: auto; }
+      .main-content { padding: 12px; overflow: visible; }
+    }
   </style>
 </head>
 <body>
 
   <header>
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <h1 id="mainTitle">셔틀버스 탑승 관리 마스터</h1>
-      <button id="resetBtn" class="btn-reset" onclick="resetSystem()" style="display:none;">🔄 새 명단 등록</button>
-    </div>
-    <div class="sub" id="summaryText">엑셀 데이터를 붙여넣어 관리 페이지를 생성하세요.</div>
-
-    <div class="controls" id="controlPanel" style="display: none;">
-      <input type="search" id="searchKeyword" class="search-bar" placeholder="성명 또는 전화번호 실시간 검색..." oninput="renderRoster()" />
-      <div class="tabs">
-        <div class="tab active" id="tab-all" onclick="filterTab('all')">전체 <span class="badge" id="cntAll">0</span></div>
-        <div class="tab" id="tab-arrived" onclick="filterTab('arrived')">도착 <span class="badge" id="cntArrived">0</span></div>
-        <div class="tab" id="tab-notArrived" onclick="filterTab('notArrived')">미도착 <span class="badge" id="cntNotArrived">0</span></div>
-        <div class="tab" id="tab-canceled" onclick="filterTab('canceled')">취소/개별 <span class="badge" id="cntCanceled">0</span></div>
-      </div>
-    </div>
+    <h1>🚌 셔틀버스 통합 운영 워크스페이스</h1>
+    <div style="font-size: 12px; color: var(--muted);">각 팀원의 데이터는 개별 브라우저에 안전하게 보관됩니다.</div>
   </header>
 
-  <div class="container">
-    <div id="page-setup" class="page active">
-      <div class="setup-box">
-        <h2>📋 엑셀 명단 붙여넣기</h2>
-        <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 0;">
-          엑셀에서 <b>[성명]</b> 열과 <b>[전화번호]</b> 열 영역을 복사해서 아래에 붙여넣어 주세요.
-        </p>
-        <textarea id="pasteInput" class="paste-area" placeholder="홍길동&#9;010-1234-5678&#10;임꺽정&#9;010-9876-5432"></textarea>
-        <button class="btn-generate" onclick="generateRoster()">🚀 탑승 관리 페이지 생성</button>
-      </div>
+  <div class="wrapper">
+    <div class="sidebar">
+      <button class="btn-add-shuttle" onclick="openNewSetup()">➕ 새 셔틀 교육 과정 추가</button>
+      <h3>📂 기 생성된 마스터 명단</h3>
+      <div id="shuttleList" class="shuttle-list"></div>
     </div>
 
-    <div id="page-admin" class="page">
-      <div id="roster-list" class="list"></div>
-      <div id="empty-msg" class="empty" style="display:none;">조건에 맞는 대상자가 없습니다.</div>
+    <div class="main-content">
+      <div class="container">
+        
+        <div id="page-setup" class="page active">
+          <div class="setup-box">
+            <h2>📋 새로운 셔틀 관리 생성</h2>
+            <div class="form-group">
+              <label>교육 과정명 (예: 국방부 교육 셔틀, 교육부 셔틀 등) *</label>
+              <input type="text" id="shuttleTitle" placeholder="과정 이름을 입력하세요" />
+            </div>
+            <div class="form-group">
+              <label>엑셀 명단 붙여넣기 *</label>
+              <p style="font-size: 12px; color: var(--muted); margin: 0 0 6px 0; line-height: 1.4;">
+                엑셀에서 <b>[성명]</b> 열과 <b>[전화번호]</b> 열 영역을 복사해서 붙여넣으세요.
+              </p>
+              <textarea id="pasteInput" class="paste-area" placeholder="홍길동&#9;010-1234-5678&#10;임꺽정&#9;010-9876-5432"></textarea>
+            </div>
+            <button class="btn-generate" onclick="createNewShuttle()">🚀 탑승 관리 페이지 생성</button>
+          </div>
+        </div>
+
+        <div id="page-admin" class="page">
+          <div class="dashboard-header">
+            <div class="dashboard-title-area">
+              <h2 id="currentShuttleTitle" class="dashboard-title">선택된 교육 과정</h2>
+              <button class="btn-append" onclick="openAppendModal()">➕ 실시간 명단 추가</button>
+            </div>
+            <div id="summaryText" class="sub-summary">전체 0명 · 도착 0명 · 미도착 0명</div>
+            
+            <div class="controls">
+              <input type="search" id="searchKeyword" class="search-bar" placeholder="성명 또는 연락처 실시간 검색..." oninput="renderRoster()" />
+              <div class="tabs">
+                <div class="tab active" id="tab-all" onclick="filterTab('all')">전체</div>
+                <div class="tab" id="tab-arrived" onclick="filterTab('arrived')">도착</div>
+                <div class="tab" id="tab-notArrived" onclick="filterTab('notArrived')">미도착</div>
+                <div class="tab" id="tab-canceled" onclick="filterTab('canceled')">취소/개별</div>
+              </div>
+            </div>
+          </div>
+          
+          <div id="roster-list" class="list"></div>
+          <div id="empty-msg" class="empty" style="display:none;">조건에 맞는 대상자가 없습니다.</div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <div id="appendModal" class="modal-overlay">
+    <div class="modal-box">
+      <h3>📋 명단 추가 (기존 내역 유지)</h3>
+      <p style="font-size: 12px; color: var(--muted); margin-top: 0; line-height: 1.4;">
+        기존 명단 하단에 **추가된 인원**만 복사해서 붙여넣어 주세요.<br>
+        (예: 전날 밤 급하게 추가된 5명만 복붙)
+      </p>
+      <textarea id="appendPasteInput" class="paste-area" style="height:120px;" placeholder="추가길동&#9;010-5555-5555"></textarea>
+      <div class="modal-footer">
+        <button class="btn-close" onclick="closeAppendModal()">닫기</button>
+        <button class="btn-submit" onclick="submitAppendRoster()">명단 이어붙이기 🚀</button>
+      </div>
     </div>
   </div>
 
 <script>
-  let ROSTER_DATA = [];
+  let ALL_SHUTTLES = [];
+  let SELECTED_SHUTTLE_ID = null;
   let CURRENT_TAB = "all";
 
   window.onload = function() {
-    const saved = localStorage.getItem("SHUTTLE_ROSTER");
+    const saved = localStorage.getItem("MULTI_SHUTTLE_DATA");
     if(saved) {
-      ROSTER_DATA = JSON.parse(saved);
-      switchToAdminView();
+      ALL_SHUTTLES = JSON.parse(saved);
+      renderSidebar();
     }
+    openNewSetup();
   }
 
-  function generateRoster() {
-    const rawText = document.getElementById("pasteInput").value.trim();
-    if(!rawText) return alert("엑셀에서 복사한 명단을 붙여넣어 주세요.");
+  function saveToStorage() {
+    localStorage.setItem("MULTI_SHUTTLE_DATA", JSON.stringify(ALL_SHUTTLES));
+  }
 
+  function renderSidebar() {
+    const listEl = document.getElementById("shuttleList");
+    if(ALL_SHUTTLES.length === 0) {
+      listEl.innerHTML = '<div style="font-size:11px; color:#9ca3af; text-align:center; padding:20px;">생성된 내역이 없습니다.</div>';
+      return;
+    }
+    listEl.innerHTML = ALL_SHUTTLES.map(s => `
+      <div class="shuttle-item ${s.id === SELECTED_SHUTTLE_ID ? 'active' : ''}" onclick="selectShuttle(${s.id})">
+        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">📂 ${escapeHtml(s.title)}</span>
+        <button class="btn-del" onclick="deleteShuttle(${s.id}, event)">×</button>
+      </div>
+    `).join("");
+  }
+
+  function openNewSetup() {
+    SELECTED_SHUTTLE_ID = null;
+    renderSidebar();
+    document.getElementById("shuttleTitle").value = "";
+    document.getElementById("pasteInput").value = "";
+    document.getElementById("page-admin").classList.remove("active");
+    document.getElementById("page-setup").classList.add("active");
+  }
+
+  // 데이터 파싱 헬퍼 함수
+  function parseExcelText(rawText, startingId) {
     const lines = rawText.split("\n");
-    const parsedData = [];
-    let idCounter = 1;
+    const list = [];
+    let idCounter = startingId;
 
     lines.forEach(line => {
       if(!line.trim()) return;
@@ -131,7 +240,7 @@
       }
 
       if(name) {
-        parsedData.push({
+        list.push({
           id: idCounter++,
           name: name,
           phone: phone || "전화번호 없음",
@@ -141,23 +250,87 @@
         });
       }
     });
-
-    if(parsedData.length === 0) return alert("올바른 명단 형식을 찾을 수 없습니다.");
-    ROSTER_DATA = parsedData;
-    saveToStorage();
-    switchToAdminView();
+    return list;
   }
 
-  function switchToAdminView() {
+  function createNewShuttle() {
+    const title = document.getElementById("shuttleTitle").value.trim();
+    const rawText = document.getElementById("pasteInput").value.trim();
+    
+    if(!title) return alert("교육 과정명을 입력해 주세요.");
+    if(!rawText) return alert("엑셀에서 복사한 명단을 붙여넣어 주세요.");
+
+    const roster = parseExcelText(rawText, 1);
+    if(roster.length === 0) return alert("명단 형식이 올바르지 않습니다.");
+
+    const newShuttle = { id: Date.now(), title: title, roster: roster };
+    ALL_SHUTTLES.push(newShuttle);
+    saveToStorage();
+    selectShuttle(newShuttle.id);
+  }
+
+  /* 팝업 제어 및 실시간 데이터 누적 로직 */
+  function openAppendModal() {
+    document.getElementById("appendPasteInput").value = "";
+    document.getElementById("appendModal").classList.add("active");
+  }
+
+  function closeAppendModal() {
+    document.getElementById("appendModal").classList.remove("active");
+  }
+
+  function submitAppendRoster() {
+    const rawText = document.getElementById("appendPasteInput").value.trim();
+    if(!rawText) return alert("추가할 인원의 명단을 입력해 주세요.");
+
+    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
+    if(!shuttle) return;
+
+    // 기존 연번 최대값 다음 번호부터 부여되게 설정
+    const currentMaxId = shuttle.roster.reduce((max, item) => item.id > max ? item.id : max, 0);
+    const newItems = parseExcelText(rawText, currentMaxId + 1);
+
+    if(newItems.length === 0) return alert("추가할 인원의 명단 형식이 올바르지 않습니다.");
+
+    // 중복 제거 검증 (동일 이름 + 동일 전화번호 우회)
+    let addedCount = 0;
+    newItems.forEach(newItem => {
+      const isDuplicate = shuttle.roster.some(old => old.name === newItem.name && old.phone === newItem.phone);
+      if(!isDuplicate) {
+        shuttle.roster.push(newItem);
+        addedCount++;
+      }
+    });
+
+    saveToStorage();
+    closeAppendModal();
+    renderRoster();
+    alert(`기존 내역에 새 인원 ${addedCount}명이 성공적으로 이어 붙었습니다!`);
+  }
+
+  function selectShuttle(id) {
+    SELECTED_SHUTTLE_ID = id;
+    renderSidebar();
+    const shuttle = ALL_SHUTTLES.find(x => x.id === id);
+    if(!shuttle) return;
+
+    document.getElementById("currentShuttleTitle").textContent = "📂 " + shuttle.title;
+    document.getElementById("searchKeyword").value = "";
+    CURRENT_TAB = "all";
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById("tab-all").classList.add('active');
     document.getElementById("page-setup").classList.remove("active");
     document.getElementById("page-admin").classList.add("active");
-    document.getElementById("controlPanel").style.display = "flex";
-    document.getElementById("resetBtn").style.display = "block";
     renderRoster();
   }
 
-  function saveToStorage() {
-    localStorage.setItem("SHUTTLE_ROSTER", JSON.stringify(ROSTER_DATA));
+  function deleteShuttle(id, event) {
+    event.stopPropagation();
+    if(!confirm("이 과정의 셔틀 관리 데이터를 영구 삭제하시겠습니까?")) return;
+    ALL_SHUTTLES = ALL_SHUTTLES.filter(x => x.id !== id);
+    saveToStorage();
+    if(SELECTED_SHUTTLE_ID === id) openNewSetup();
+    else renderSidebar();
   }
 
   function filterTab(tabType) {
@@ -168,19 +341,17 @@
   }
 
   function renderRoster() {
+    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
+    if(!shuttle) return;
+
     const keyword = document.getElementById("searchKeyword").value.trim().toLowerCase();
-    let rows = ROSTER_DATA.slice();
+    let rows = shuttle.roster.slice();
 
-    const total = ROSTER_DATA.length;
-    const arrived = ROSTER_DATA.filter(r => !r.status && r.arrived).length;
-    const notArrived = ROSTER_DATA.filter(r => !r.status && !r.arrived).length;
-    const canceled = ROSTER_DATA.filter(r => !!r.status).length;
-
-    document.getElementById("cntAll").textContent = total;
-    document.getElementById("cntArrived").textContent = arrived;
-    document.getElementById("cntNotArrived").textContent = notArrived;
-    document.getElementById("cntCanceled").textContent = canceled;
-    document.getElementById("summaryText").textContent = `전체 ${total} · 도착 ${arrived} · 미도착 ${notArrived} · 취소 ${canceled}`;
+    const total = shuttle.roster.length;
+    const arrived = shuttle.roster.filter(r => !r.status && r.arrived).length;
+    const notArrived = shuttle.roster.filter(r => !r.status && !r.arrived).length;
+    const canceled = shuttle.roster.filter(r => !!r.status).length;
+    document.getElementById("summaryText").textContent = `전체 ${total}명 · 도착 ${arrived}명 · 미도착 ${notArrived}명 · 취소/개별 ${canceled}명`;
 
     if(keyword) {
       rows = rows.filter(r => (r.name + r.phone).toLowerCase().includes(keyword));
@@ -214,7 +385,6 @@
         <div class="roster-card ${r.status ? 'canceled' : ''}">
           <div class="roster-header">
             <div class="roster-title">
-              <span class="badge-no">${idx + 1}</span>
               <span class="user-name">${escapeHtml(r.name)}</span>
             </div>
             ${badgeHtml}
@@ -243,15 +413,17 @@
     }).join("");
   }
 
-  function updateArrived(id, isChecked) {
-    const target = ROSTER_DATA.find(x => x.id === id);
+  function updateArrived(rosterId, isChecked) {
+    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
+    const target = shuttle?.roster.find(x => x.id === rosterId);
     if(target) target.arrived = isChecked;
     saveToStorage();
     renderRoster();
   }
 
-  function updateStatus(id, value) {
-    const target = ROSTER_DATA.find(x => x.id === id);
+  function updateStatus(rosterId, value) {
+    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
+    const target = shuttle?.roster.find(x => x.id === rosterId);
     if(target) {
       target.status = value;
       if(value) target.arrived = false;
@@ -260,26 +432,11 @@
     renderRoster();
   }
 
-  function updateMemo(id, value) {
-    const target = ROSTER_DATA.find(x => x.id === id);
+  function updateMemo(rosterId, value) {
+    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
+    const target = shuttle?.roster.find(x => x.id === rosterId);
     if(target) target.memo = value;
     saveToStorage();
-  }
-
-  function resetSystem() {
-    if(!confirm("현재 체크 중인 명단을 지우고, 새로운 엑셀 명단을 복사해 오시겠습니까?")) return;
-    localStorage.removeItem("SHUTTLE_ROSTER");
-    ROSTER_DATA = [];
-    document.getElementById("pasteInput").value = "";
-    document.getElementById("searchKeyword").value = "";
-    CURRENT_TAB = "all";
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById("tab-all").classList.add('active');
-    document.getElementById("page-admin").classList.remove("active");
-    document.getElementById("page-setup").classList.add("active");
-    document.getElementById("controlPanel").style.display = "none";
-    document.getElementById("resetBtn").style.display = "none";
-    document.getElementById("summaryText").textContent = "엑셀 데이터를 붙여넣어 관리 페이지를 생성하세요.";
   }
 
   function escapeHtml(str) {

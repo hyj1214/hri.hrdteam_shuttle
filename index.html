@@ -3,59 +3,19 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>스마트 셔틀버스 탑승 관리 시스템</title>
+  <title>실시간 동기화 셔틀버스 탑승 관리</title>
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
   <style>
     :root {
-      --bg: #f4f6f9;
-      --card: #ffffff;
-      --line: #e5e7eb;
-      --text: #1f2937;
-      --muted: #4b5563;
-      --blue: #2563eb;
-      --blueBg: #eff6ff;
-      --green: #16a34a;
-      --greenBg: #f0fdf4;
-      --red: #dc2626;
-      --redBg: #fef2f2;
-      font-family: Pretendard, sans-serif;
-      color: var(--text);
+      --bg: #f4f6f9; --card: #ffffff; --line: #e5e7eb; --text: #1f2937; --muted: #4b5563;
+      --blue: #2563eb; --blueBg: #eff6ff; --green: #16a34a; --greenBg: #f0fdf4; --red: #dc2626; --redBg: #fef2f2;
+      font-family: Pretendard, sans-serif; color: var(--text);
     }
-    body { margin: 0; background: var(--bg); display: flex; flex-direction: column; height: 100vh; overflow: hidden; }
-    
-    .wrapper { display: flex; flex: 1; height: calc(100vh - 60px); overflow: hidden; }
-    
-    header { background: var(--card); border-bottom: 1px solid var(--line); padding: 12px 20px; display: flex; justify-content: space-between; align-items: center; height: 35px; }
+    body { margin: 0; background: var(--bg); display: flex; flex-direction: column; min-height: 100vh; }
+    header { background: var(--card); border-bottom: 1px solid var(--line); padding: 14px 20px; display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 10; }
     header h1 { margin: 0; font-size: 16px; font-weight: 800; }
-
-    /* 좌측 사이드바 */
-    .sidebar { width: 260px; background: #fff; border-right: 1px solid var(--line); display: flex; flex-direction: column; padding: 16px; box-sizing: border-box; }
-    .sidebar h3 { margin-top: 0; font-size: 14px; color: var(--muted); margin-bottom: 12px; font-weight: 700; }
-    .shuttle-list { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; }
-    .shuttle-item { padding: 10px 14px; border: 1px solid var(--line); border-radius: 8px; font-size: 13px; cursor: pointer; font-weight: 600; display: flex; justify-content: space-between; align-items: center; transition: all 0.2s; }
-    .shuttle-item:hover { background: #fafafa; }
-    .shuttle-item.active { background: var(--blueBg); color: var(--blue); border-color: var(--blue); }
-    .btn-del { background: none; border: none; color: #9ca3af; cursor: pointer; font-size: 14px; padding: 0 4px; }
-    .btn-del:hover { color: var(--red); }
-    .btn-add-shuttle { width: 100%; padding: 10px; background: #f3f4f6; border: 1px dashed #cbd5e1; border-radius: 8px; font-size: 12px; font-weight: 700; cursor: pointer; margin-bottom: 12px; text-align: center; }
-    .btn-add-shuttle:hover { background: #e5e7eb; }
-
-    /* 우측 영역 */
-    .main-content { flex: 1; overflow-y: auto; padding: 20px; box-sizing: border-box; }
+    .main-content { flex: 1; padding: 20px; box-sizing: border-box; }
     .container { max-width: 600px; margin: 0 auto; }
-    .page { display: none; }
-    .page.active { display: block; }
-
-    /* 폼 및 박스 스타일 */
-    .setup-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
-    .setup-box h2 { margin-top: 0; font-size: 18px; font-weight: 800; color: var(--blue); }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; font-size: 12px; font-weight: 700; margin-bottom: 4px; color: var(--muted); }
-    .form-group input { width: 100%; padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px; box-sizing: border-box; font-size: 13px; }
-    .paste-area { width: 100%; height: 160px; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 13px; resize: none; outline: none; background: #f8fafc; font-family: monospace; }
-    .btn-generate { width: 100%; padding: 14px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 10px; }
-    
-    /* 대시보드 구조 */
     .dashboard-header { background: white; border: 1px solid var(--line); border-radius: 14px; padding: 14px 16px; margin-bottom: 14px; }
     .dashboard-title-area { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 6px; }
     .dashboard-title { font-size: 18px; font-weight: 800; margin: 0; }
@@ -67,10 +27,9 @@
     .tabs { display: flex; gap: 4px; overflow-x: auto; }
     .tab { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 6px 12px; font-size: 11px; cursor: pointer; white-space: nowrap; font-weight: 600; }
     .tab.active { background: var(--blue); color: white; border-color: var(--blue); }
-    
-    /* 카드 디자인 */
     .list { display: flex; flex-direction: column; gap: 10px; margin-top: 14px; }
-    .roster-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); }
+    .roster-card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px; box-shadow: 0 1px 2px rgba(0,0,0,0.02); position: relative; }
+    .roster-card.disabled-mask::after { content: "처리 중..."; position: absolute; top:0; left:0; width:100%; height:100%; background: rgba(255,255,255,0.6); display:flex; justify-content:center; align-items:center; font-size:12px; font-weight:700; color:var(--blue); border-radius:12px; }
     .roster-card.canceled { background: #f3f4f6; opacity: 0.6; }
     .roster-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
     .user-name { font-size: 15px; font-weight: 800; }
@@ -82,275 +41,114 @@
     .grid-action label { display: block; font-size: 9px; color: var(--muted); font-weight: 700; margin-bottom: 2px; }
     .grid-action input, .grid-action select, .grid-action textarea { width: 100%; padding: 4px; border: 1px solid #cbd5e1; border-radius: 4px; font-size: 11px; box-sizing: border-box; outline: none; background: #fff; }
     .phone-link { font-size: 12px; color: var(--blue); text-decoration: none; font-weight: 600; }
-    .empty { text-align: center; padding: 30px; color: var(--muted); font-size: 13px; background: white; border-radius: 12px; border: 1px dashed #cbd5e1; }
-
-    /* 모달 레이어 (실시간 추가 팝업) */
+    .empty, .loading { text-align: center; padding: 40px; color: var(--muted); font-size: 13px; background: white; border-radius: 12px; border: 1px solid var(--line); }
     .modal-overlay { display: none; position: fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.4); z-index: 100; justify-content: center; align-items: center; }
     .modal-overlay.active { display: flex; }
     .modal-box { background: white; width: 90%; max-width: 450px; border-radius: 16px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); }
     .modal-box h3 { margin-top: 0; margin-bottom: 10px; font-size: 16px; font-weight: 800; color: var(--blue); }
+    .paste-area { width: 100%; height: 120px; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 13px; resize: none; outline: none; background: #f8fafc; }
     .modal-footer { display: flex; justify-content: flex-end; gap: 8px; margin-top: 12px; }
     .btn-close { background: #e5e7eb; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
     .btn-submit { background: #10b981; color: white; border: none; padding: 8px 14px; border-radius: 6px; font-size: 12px; font-weight: 700; cursor: pointer; }
-
-    @media (max-width: 768px) {
-      body { overflow: auto; height: auto; }
-      .wrapper { flex-direction: column; height: auto; overflow: visible; }
-      .sidebar { width: 100%; border-right: none; border-bottom: 1px solid var(--line); height: auto; }
-      .main-content { padding: 12px; overflow: visible; }
-    }
   </style>
 </head>
 <body>
 
   <header>
-    <h1>🚌 셔틀버스 통합 운영 워크스페이스</h1>
-    <div style="font-size: 12px; color: var(--muted);">각 팀원의 데이터는 개별 브라우저에 안전하게 보관됩니다.</div>
+    <h1>🚌 셔틀버스 실시간 통합 현장관리</h1>
+    <button class="btn-append" style="background:#4b5563;" onclick="fetchRoster()">🔄 새로고침</button>
   </header>
 
-  <div class="wrapper">
-    <div class="sidebar">
-      <button class="btn-add-shuttle" onclick="openNewSetup()">➕ 새 셔틀 교육 과정 추가</button>
-      <h3>📂 기 생성된 마스터 명단</h3>
-      <div id="shuttleList" class="shuttle-list"></div>
-    </div>
-
-    <div class="main-content">
-      <div class="container">
+  <div class="main-content">
+    <div class="container">
+      
+      <div class="dashboard-header">
+        <div class="dashboard-title-area">
+          <h2 class="dashboard-title">상태 모니터링 디렉토리</h2>
+          <button class="btn-append" onclick="openAppendModal()">➕ 명단 데이터 주입</button>
+        </div>
+        <div id="summaryText" class="sub-summary">데이터 불러오는 중...</div>
         
-        <div id="page-setup" class="page active">
-          <div class="setup-box">
-            <h2>📋 새로운 셔틀 관리 생성</h2>
-            <div class="form-group">
-              <label>교육 과정명 (예: 국방부 교육 셔틀, 교육부 셔틀 등) *</label>
-              <input type="text" id="shuttleTitle" placeholder="과정 이름을 입력하세요" />
-            </div>
-            <div class="form-group">
-              <label>엑셀 명단 붙여넣기 *</label>
-              <p style="font-size: 12px; color: var(--muted); margin: 0 0 6px 0; line-height: 1.4;">
-                엑셀에서 <b>[성명]</b> 열과 <b>[전화번호]</b> 열 영역을 복사해서 붙여넣으세요.
-              </p>
-              <textarea id="pasteInput" class="paste-area" placeholder="홍길동&#9;010-1234-5678&#10;임꺽정&#9;010-9876-5432"></textarea>
-            </div>
-            <button class="btn-generate" onclick="createNewShuttle()">🚀 탑승 관리 페이지 생성</button>
+        <div class="controls">
+          <input type="search" id="searchKeyword" class="search-bar" placeholder="성명 또는 연락처 실시간 검색..." oninput="renderRoster()" />
+          <div class="tabs">
+            <div class="tab active" id="tab-all" onclick="filterTab('all')">전체</div>
+            <div class="tab" id="tab-arrived" onclick="filterTab('arrived')">도착</div>
+            <div class="tab" id="tab-notArrived" onclick="filterTab('notArrived')">미도착</div>
+            <div class="tab" id="tab-canceled" onclick="filterTab('canceled')">취소/개별</div>
           </div>
         </div>
-
-        <div id="page-admin" class="page">
-          <div class="dashboard-header">
-            <div class="dashboard-title-area">
-              <h2 id="currentShuttleTitle" class="dashboard-title">선택된 교육 과정</h2>
-              <button class="btn-append" onclick="openAppendModal()">➕ 실시간 명단 추가</button>
-            </div>
-            <div id="summaryText" class="sub-summary">전체 0명 · 도착 0명 · 미도착 0명</div>
-            
-            <div class="controls">
-              <input type="search" id="searchKeyword" class="search-bar" placeholder="성명 또는 연락처 실시간 검색..." oninput="renderRoster()" />
-              <div class="tabs">
-                <div class="tab active" id="tab-all" onclick="filterTab('all')">전체</div>
-                <div class="tab" id="tab-arrived" onclick="filterTab('arrived')">도착</div>
-                <div class="tab" id="tab-notArrived" onclick="filterTab('notArrived')">미도착</div>
-                <div class="tab" id="tab-canceled" onclick="filterTab('canceled')">취소/개별</div>
-              </div>
-            </div>
-          </div>
-          
-          <div id="roster-list" class="list"></div>
-          <div id="empty-msg" class="empty" style="display:none;">조건에 맞는 대상자가 없습니다.</div>
-        </div>
-
       </div>
+      
+      <div id="loading-msg" class="loading">구글 시트 서버에서 실시간 명단을 받아오고 있습니다...</div>
+      <div id="roster-list" class="list" style="display:none;"></div>
+      <div id="empty-msg" class="empty" style="display:none;">조건에 맞는 대상자가 없습니다.</div>
+
     </div>
   </div>
 
   <div id="appendModal" class="modal-overlay">
     <div class="modal-box">
-      <h3>📋 명단 추가 (기존 내역 유지)</h3>
+      <h3>📋 신규 탑승 인원 누적 주입</h3>
       <p style="font-size: 12px; color: var(--muted); margin-top: 0; line-height: 1.4;">
-        기존 명단 하단에 **추가된 인원**만 복사해서 붙여넣어 주세요.<br>
-        (예: 전날 밤 급하게 추가된 5명만 복붙)
+        기존 체크 내역은 보존되며, 새 명단만 아래로 이어 붙습니다. Excel에서 [성명]과 [전화번호] 열을 복사해 붙여넣으세요.
       </p>
-      <textarea id="appendPasteInput" class="paste-area" style="height:120px;" placeholder="추가길동&#9;010-5555-5555"></textarea>
+      <textarea id="appendPasteInput" class="paste-area" placeholder="홍길동&#9;010-1234-5678"></textarea>
       <div class="modal-footer">
         <button class="btn-close" onclick="closeAppendModal()">닫기</button>
-        <button class="btn-submit" onclick="submitAppendRoster()">명단 이어붙이기 🚀</button>
+        <button class="btn-submit" onclick="submitAppendRoster()">데이터 서버 전송 🚀</button>
       </div>
     </div>
   </div>
 
 <script>
-  let ALL_SHUTTLES = [];
-  let SELECTED_SHUTTLE_ID = null;
+  // ⚠️ [필수 고쳐야 할 부분] 2단계 결과물인 본인의 구글 웹 앱 주소(https://script.google.com/macros/s/.../exec)를 꼭 넣으세요!
+  const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwSfULomDNI7vFQY6RtkNuQ_WnBqnDMnj6rNY6d2WlsUMHauWQ0SiLSZNaxSqhYTrs8Rw/exec";
+
+  let ROSTER_DATA = [];
   let CURRENT_TAB = "all";
+  let memoTimers = {};
 
   window.onload = function() {
-    const saved = localStorage.getItem("MULTI_SHUTTLE_DATA");
-    if(saved) {
-      ALL_SHUTTLES = JSON.parse(saved);
-      renderSidebar();
-    }
-    openNewSetup();
+    fetchRoster();
   }
 
-  function saveToStorage() {
-    localStorage.setItem("MULTI_SHUTTLE_DATA", JSON.stringify(ALL_SHUTTLES));
-  }
-
-  function renderSidebar() {
-    const listEl = document.getElementById("shuttleList");
-    if(ALL_SHUTTLES.length === 0) {
-      listEl.innerHTML = '<div style="font-size:11px; color:#9ca3af; text-align:center; padding:20px;">생성된 내역이 없습니다.</div>';
-      return;
-    }
-    listEl.innerHTML = ALL_SHUTTLES.map(s => `
-      <div class="shuttle-item ${s.id === SELECTED_SHUTTLE_ID ? 'active' : ''}" onclick="selectShuttle(${s.id})">
-        <span style="overflow:hidden; text-overflow:ellipsis; white-space:nowrap; max-width:180px;">📂 ${escapeHtml(s.title)}</span>
-        <button class="btn-del" onclick="deleteShuttle(${s.id}, event)">×</button>
-      </div>
-    `).join("");
-  }
-
-  function openNewSetup() {
-    SELECTED_SHUTTLE_ID = null;
-    renderSidebar();
-    document.getElementById("shuttleTitle").value = "";
-    document.getElementById("pasteInput").value = "";
-    document.getElementById("page-admin").classList.remove("active");
-    document.getElementById("page-setup").classList.add("active");
-  }
-
-  // 데이터 파싱 헬퍼 함수
-  function parseExcelText(rawText, startingId) {
-    const lines = rawText.split("\n");
-    const list = [];
-    let idCounter = startingId;
-
-    lines.forEach(line => {
-      if(!line.trim()) return;
-      const tokens = line.split(/\t|,/);
-      let name = tokens[0] ? tokens[0].trim() : "";
-      let phone = tokens[1] ? tokens[1].trim() : "";
-
-      if(!phone && tokens.length === 1) {
-        const spaceTokens = name.split(/\s+/);
-        if(spaceTokens.length >= 2) {
-          name = spaceTokens[0];
-          phone = spaceTokens[1];
-        }
-      }
-
-      if(name) {
-        list.push({
-          id: idCounter++,
-          name: name,
-          phone: phone || "전화번호 없음",
-          arrived: false,
-          status: "",
-          memo: ""
-        });
-      }
-    });
-    return list;
-  }
-
-  function createNewShuttle() {
-    const title = document.getElementById("shuttleTitle").value.trim();
-    const rawText = document.getElementById("pasteInput").value.trim();
+  // 구글 서버로부터 원격 데이터 수신 (GET)
+  function fetchRoster() {
+    document.getElementById("loading-msg").style.display = "block";
+    document.getElementById("roster-list").style.display = "none";
     
-    if(!title) return alert("교육 과정명을 입력해 주세요.");
-    if(!rawText) return alert("엑셀에서 복사한 명단을 붙여넣어 주세요.");
-
-    const roster = parseExcelText(rawText, 1);
-    if(roster.length === 0) return alert("명단 형식이 올바르지 않습니다.");
-
-    const newShuttle = { id: Date.now(), title: title, roster: roster };
-    ALL_SHUTTLES.push(newShuttle);
-    saveToStorage();
-    selectShuttle(newShuttle.id);
+    fetch(`${WEB_APP_URL}?action=getRoster`)
+      .then(res => res.json())
+      .then(data => {
+        ROSTER_DATA = data;
+        document.getElementById("loading-msg").style.display = "none";
+        document.getElementById("roster-list").style.display = "flex";
+        renderRoster();
+      })
+      .catch(err => {
+        document.getElementById("loading-msg").textContent = "서버 연결에 실패했습니다. 구글 웹앱 주소 및 권한 설정을 확인하세요.";
+        console.error(err);
+      });
   }
 
-  /* 팝업 제어 및 실시간 데이터 누적 로직 */
-  function openAppendModal() {
-    document.getElementById("appendPasteInput").value = "";
-    document.getElementById("appendModal").classList.add("active");
-  }
-
-  function closeAppendModal() {
-    document.getElementById("appendModal").classList.remove("active");
-  }
-
-  function submitAppendRoster() {
-    const rawText = document.getElementById("appendPasteInput").value.trim();
-    if(!rawText) return alert("추가할 인원의 명단을 입력해 주세요.");
-
-    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
-    if(!shuttle) return;
-
-    // 기존 연번 최대값 다음 번호부터 부여되게 설정
-    const currentMaxId = shuttle.roster.reduce((max, item) => item.id > max ? item.id : max, 0);
-    const newItems = parseExcelText(rawText, currentMaxId + 1);
-
-    if(newItems.length === 0) return alert("추가할 인원의 명단 형식이 올바르지 않습니다.");
-
-    // 중복 제거 검증 (동일 이름 + 동일 전화번호 우회)
-    let addedCount = 0;
-    newItems.forEach(newItem => {
-      const isDuplicate = shuttle.roster.some(old => old.name === newItem.name && old.phone === newItem.phone);
-      if(!isDuplicate) {
-        shuttle.roster.push(newItem);
-        addedCount++;
-      }
-    });
-
-    saveToStorage();
-    closeAppendModal();
-    renderRoster();
-    alert(`기존 내역에 새 인원 ${addedCount}명이 성공적으로 이어 붙었습니다!`);
-  }
-
-  function selectShuttle(id) {
-    SELECTED_SHUTTLE_ID = id;
-    renderSidebar();
-    const shuttle = ALL_SHUTTLES.find(x => x.id === id);
-    if(!shuttle) return;
-
-    document.getElementById("currentShuttleTitle").textContent = "📂 " + shuttle.title;
-    document.getElementById("searchKeyword").value = "";
-    CURRENT_TAB = "all";
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById("tab-all").classList.add('active');
-    document.getElementById("page-setup").classList.remove("active");
-    document.getElementById("page-admin").classList.add("active");
-    renderRoster();
-  }
-
-  function deleteShuttle(id, event) {
-    event.stopPropagation();
-    if(!confirm("이 과정의 셔틀 관리 데이터를 영구 삭제하시겠습니까?")) return;
-    ALL_SHUTTLES = ALL_SHUTTLES.filter(x => x.id !== id);
-    saveToStorage();
-    if(SELECTED_SHUTTLE_ID === id) openNewSetup();
-    else renderSidebar();
-  }
-
-  function filterTab(tabType) {
-    CURRENT_TAB = tabType;
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-    document.getElementById(`tab-${tabType}`).classList.add('active');
-    renderRoster();
+  // 서버로 데이터 전달 처리용 헬퍼 함수
+  function requestToServer(params, callback) {
+    const query = Object.keys(params).map(k => encodeURIComponent(k) + '=' + encodeURIComponent(params[k])).join('&');
+    fetch(`${WEB_APP_URL}?${query}`, { method: 'POST' })
+      .then(res => res.json())
+      .then(data => { if(callback) callback(data); })
+      .catch(err => alert("네트워크 서버 반영에 실패했습니다. 다시 시도해 주세요."));
   }
 
   function renderRoster() {
-    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
-    if(!shuttle) return;
-
     const keyword = document.getElementById("searchKeyword").value.trim().toLowerCase();
-    let rows = shuttle.roster.slice();
+    let rows = ROSTER_DATA.slice();
 
-    const total = shuttle.roster.length;
-    const arrived = shuttle.roster.filter(r => !r.status && r.arrived).length;
-    const notArrived = shuttle.roster.filter(r => !r.status && !r.arrived).length;
-    const canceled = shuttle.roster.filter(r => !!r.status).length;
+    const total = ROSTER_DATA.length;
+    const arrived = ROSTER_DATA.filter(r => !r.status && r.arrived).length;
+    const notArrived = ROSTER_DATA.filter(r => !r.status && !r.arrived).length;
+    const canceled = ROSTER_DATA.filter(r => !!r.status).length;
     document.getElementById("summaryText").textContent = `전체 ${total}명 · 도착 ${arrived}명 · 미도착 ${notArrived}명 · 취소/개별 ${canceled}명`;
 
     if(keyword) {
@@ -376,36 +174,34 @@
     }
     emptyEl.style.display = "none";
 
-    listEl.innerHTML = rows.map((r, idx) => {
+    listEl.innerHTML = rows.map(r => {
       let badgeHtml = `<span class="status-badge status-none">⭕ 미도착</span>`;
       if (r.status) badgeHtml = `<span class="status-badge status-cancel">⛔ ${r.status}</span>`;
       else if (r.arrived) badgeHtml = `<span class="status-badge status-arrived">✅ 도착</span>`;
 
       return `
-        <div class="roster-card ${r.status ? 'canceled' : ''}">
+        <div class="roster-card ${r.status ? 'canceled' : ''}" id="card-${r.rowNumber}">
           <div class="roster-header">
-            <div class="roster-title">
-              <span class="user-name">${escapeHtml(r.name)}</span>
-            </div>
+            <div><span class="user-name">${escapeHtml(r.name)}</span></div>
             ${badgeHtml}
           </div>
           <div>📱 연락처: <a href="tel:${r.phone.replace(/[^\d]/g, '')}" class="phone-link">${escapeHtml(r.phone)}</a></div>
           <div class="grid-action">
-            <div class="action-item">
+            <div>
               <label>도착확인</label>
-              <input type="checkbox" ${r.arrived ? 'checked' : ''} ${r.status ? 'disabled' : ''} onchange="updateArrived(${r.id}, this.checked)" />
+              <input type="checkbox" ${r.arrived ? 'checked' : ''} ${r.status ? 'disabled' : ''} onchange="updateArrived(${r.rowNumber}, this.checked)" />
             </div>
-            <div class="action-item">
+            <div>
               <label>상태변경</label>
-              <select onchange="updateStatus(${r.id}, this.value)">
+              <select onchange="updateStatus(${r.rowNumber}, this.value)">
                 <option value="" ${!r.status ? 'selected' : ''}>선택 없음</option>
                 <option value="교육취소" ${r.status === '교육취소' ? 'selected' : ''}>교육취소</option>
                 <option value="개별이동" ${r.status === '개별이동' ? 'selected' : ''}>개별이동</option>
               </select>
             </div>
-            <div class="action-item">
+            <div>
               <label>비고(메모)</label>
-              <textarea style="padding:4px; height:24px; resize:none;" oninput="updateMemo(${r.id}, this.value)">${escapeHtml(r.memo || '')}</textarea>
+              <textarea style="padding:4px; height:24px; resize:none;" oninput="updateMemo(${r.rowNumber}, this.value)">${escapeHtml(r.memo || '')}</textarea>
             </div>
           </div>
         </div>
@@ -413,30 +209,83 @@
     }).join("");
   }
 
-  function updateArrived(rosterId, isChecked) {
-    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
-    const target = shuttle?.roster.find(x => x.id === rosterId);
-    if(target) target.arrived = isChecked;
-    saveToStorage();
-    renderRoster();
+  function updateArrived(rowNumber, isChecked) {
+    setCardLock(rowNumber, true);
+    requestToServer({ action: 'setArrived', rowNumber: rowNumber, arrived: isChecked }, () => {
+      const target = ROSTER_DATA.find(x => x.rowNumber === rowNumber);
+      if(target) target.arrived = isChecked;
+      setCardLock(rowNumber, false);
+      renderRoster();
+    });
   }
 
-  function updateStatus(rosterId, value) {
-    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
-    const target = shuttle?.roster.find(x => x.id === rosterId);
-    if(target) {
-      target.status = value;
-      if(value) target.arrived = false;
-    }
-    saveToStorage();
-    renderRoster();
+  function updateStatus(rowNumber, value) {
+    setCardLock(rowNumber, true);
+    requestToServer({ action: 'setStatus', rowNumber: rowNumber, status: value }, () => {
+      const target = ROSTER_DATA.find(x => x.rowNumber === rowNumber);
+      if(target) {
+        target.status = value;
+        if(value) target.arrived = false;
+      }
+      setCardLock(rowNumber, false);
+      renderRoster();
+    });
   }
 
-  function updateMemo(rosterId, value) {
-    const shuttle = ALL_SHUTTLES.find(x => x.id === SELECTED_SHUTTLE_ID);
-    const target = shuttle?.roster.find(x => x.id === rosterId);
+  function updateMemo(rowNumber, value) {
+    const target = ROSTER_DATA.find(x => x.rowNumber === rowNumber);
     if(target) target.memo = value;
-    saveToStorage();
+
+    if(memoTimers[rowNumber]) clearTimeout(memoTimers[rowNumber]);
+    memoTimers[rowNumber] = setTimeout(() => {
+      requestToServer({ action: 'saveMemo', rowNumber: rowNumber, memo: value });
+    }, 600);
+  }
+
+  function setCardLock(rowNumber, isLock) {
+    const card = document.getElementById(`card-${rowNumber}`);
+    if(!card) return;
+    if(isLock) card.classList.add("disabled-mask");
+    else card.classList.remove("disabled-mask");
+  }
+
+  function filterTab(tabType) {
+    CURRENT_TAB = tabType;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tabType}`).classList.add('active');
+    renderRoster();
+  }
+
+  function openAppendModal() {
+    document.getElementById("appendPasteInput").value = "";
+    document.getElementById("appendModal").classList.add("active");
+  }
+  function closeAppendModal() { document.getElementById("appendModal").classList.remove("active"); }
+
+  function submitAppendRoster() {
+    const rawText = document.getElementById("appendPasteInput").value.trim();
+    if(!rawText) return alert("추가할 인원 데이터를 입력하세요.");
+
+    const lines = rawText.split("\n");
+    const parsedList = [];
+    lines.forEach(line => {
+      if(!line.trim()) return;
+      const tokens = line.split(/\t|,/);
+      let name = tokens[0] ? tokens[0].trim() : "";
+      let phone = tokens[1] ? tokens[1].trim() : "";
+      if(name) parsedList.push({ name: name, phone: phone || "전화번호 없음" });
+    });
+
+    if(parsedList.length === 0) return alert("형식이 맞지 않습니다.");
+
+    document.getElementById("appendModal").classList.remove("active");
+    document.getElementById("loading-msg").style.display = "block";
+    document.getElementById("roster-list").style.display = "none";
+
+    requestToServer({ action: 'appendRoster', newRowsJson: JSON.stringify(parsedList) }, (addedCount) => {
+      alert(`새로운 ${addedCount}명의 데이터가 데이터 서버(구글 시트)에 안전하게 이어 붙었습니다!`);
+      fetchRoster();
+    });
   }
 
   function escapeHtml(str) {

@@ -1,0 +1,329 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>셔틀버스 엑셀 연동 탑승 체크 시스템</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pretendard@1.3.9/dist/web/static/pretendard.css">
+  <style>
+    :root {
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --line: #e5e7eb;
+      --text: #1f2937;
+      --muted: #4b5563;
+      --blue: #2563eb;
+      --blueBg: #eff6ff;
+      --green: #16a34a;
+      --greenBg: #f0fdf4;
+      --red: #dc2626;
+      --redBg: #fef2f2;
+      font-family: Pretendard, sans-serif;
+      color: var(--text);
+    }
+    body { margin: 0; background: var(--bg); padding-bottom: 40px; }
+    
+    header { background: var(--card); border-bottom: 1px solid var(--line); padding: 16px; position: sticky; top: 0; z-index: 10; }
+    h1 { margin: 0; font-size: 18px; font-weight: 800; color: #111827; }
+    .sub { font-size: 12px; color: var(--muted); margin-top: 4px; }
+
+    .container { max-width: 600px; margin: 20px auto; padding: 0 16px; box-sizing: border-box; }
+    .page { display: none; }
+    .page.active { display: block; }
+
+    /* 1단계: 명단 붙여넣기 화면 */
+    .setup-box { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 24px; box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05); }
+    .setup-box h2 { margin-top: 0; font-size: 18px; font-weight: 800; color: var(--blue); }
+    .paste-area { width: 100%; height: 200px; padding: 12px; border: 2px dashed #cbd5e1; border-radius: 10px; box-sizing: border-box; font-size: 13px; resize: none; outline: none; background: #f8fafc; font-family: monospace; }
+    .paste-area:focus { border-color: var(--blue); background: #fff; }
+    .btn-generate { width: 100%; padding: 14px; background: var(--blue); color: white; border: none; border-radius: 10px; font-size: 15px; font-weight: 700; cursor: pointer; margin-top: 14px; }
+    .btn-generate:hover { background: #1d4ed8; }
+
+    /* 2단계: 실시간 체크 화면 제어부 */
+    .controls { margin-top: 12px; display: flex; flex-direction: column; gap: 10px; }
+    .search-bar { width: 100%; padding: 12px; border: 1px solid #d1d5db; border-radius: 10px; box-sizing: border-box; font-size: 14px; outline: none; }
+    .tabs { display: flex; gap: 6px; overflow-x: auto; }
+    .tab { background: var(--card); border: 1px solid var(--line); border-radius: 999px; padding: 8px 14px; font-size: 12px; cursor: pointer; white-space: nowrap; font-weight: 600; display: flex; align-items: center; gap: 6px; }
+    .tab.active { background: var(--blue); color: white; border-color: var(--blue); }
+    .badge { background: #e5e7eb; color: #1f2937; padding: 2px 6px; border-radius: 6px; font-size: 10px; font-weight: 700; }
+    .tab.active .badge { background: rgba(255,255,255,0.3); color: white; }
+
+    /* 리스트 및 카드 */
+    .list { display: flex; flex-direction: column; gap: 12px; margin-top: 16px; }
+    .roster-card { background: var(--card); border: 1px solid var(--line); border-radius: 14px; padding: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02); }
+    .roster-card.canceled { background: #f3f4f6; opacity: 0.7; }
+    .roster-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+    .roster-title { display: flex; align-items: center; gap: 8px; }
+    .badge-no { background: #e5e7eb; padding: 2px 6px; border-radius: 6px; font-size: 11px; font-weight: 700; }
+    .user-name { font-size: 16px; font-weight: 800; }
+    
+    .status-badge { font-size: 12px; font-weight: 700; padding: 4px 8px; border-radius: 6px; }
+    .status-none { background: #f3f4f6; color: #4b5563; }
+    .status-arrived { background: var(--greenBg); color: var(--green); }
+    .status-cancel { background: var(--redBg); color: var(--red); }
+
+    .grid-action { display: grid; grid-template-columns: 1fr 1.2fr 1.5fr; gap: 8px; margin-top: 12px; background: #fafafa; padding: 10px; border-radius: 10px; border: 1px solid #f0f0f0; }
+    .action-item label { display: block; font-size: 10px; color: var(--muted); font-weight: 700; margin-bottom: 4px; }
+    .grid-action input, .grid-action select, .grid-action textarea { width: 100%; padding: 6px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 12px; box-sizing: border-box; outline: none; background: #fff; }
+    
+    .phone-link { font-size: 13px; color: var(--blue); text-decoration: none; font-weight: 600; }
+    .btn-reset { background: #ef4444; color: white; border: none; padding: 6px 12px; border-radius: 6px; font-size: 11px; font-weight: 700; cursor: pointer; float: right; margin-top: -4px; }
+    .empty { text-align: center; padding: 40px; color: var(--muted); font-size: 14px; background: white; border-radius: 14px; border: 1px dashed #cbd5e1; }
+  </style>
+</head>
+<body>
+
+  <header>
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <h1 id="mainTitle">셔틀버스 탑승 관리 마스터</h1>
+      <button id="resetBtn" class="btn-reset" onclick="resetSystem()" style="display:none;">🔄 새 명단 등록</button>
+    </div>
+    <div class="sub" id="summaryText">엑셀 데이터를 붙여넣어 관리 페이지를 생성하세요.</div>
+
+    <div class="controls" id="controlPanel" style="display: none;">
+      <input type="search" id="searchKeyword" class="search-bar" placeholder="성명 또는 전화번호 실시간 검색..." oninput="renderRoster()" />
+      <div class="tabs">
+        <div class="tab active" id="tab-all" onclick="filterTab('all')">전체 <span class="badge" id="cntAll">0</span></div>
+        <div class="tab" id="tab-arrived" onclick="filterTab('arrived')">도착 <span class="badge" id="cntArrived">0</span></div>
+        <div class="tab" id="tab-notArrived" onclick="filterTab('notArrived')">미도착 <span class="badge" id="cntNotArrived">0</span></div>
+        <div class="tab" id="tab-canceled" onclick="filterTab('canceled')">취소/개별 <span class="badge" id="cntCanceled">0</span></div>
+      </div>
+    </div>
+  </header>
+
+  <div class="container">
+    
+    <div id="page-setup" class="page active">
+      <div class="setup-box">
+        <h2>📋 엑셀 명단 붙여넣기</h2>
+        <p style="font-size: 13px; color: var(--muted); line-height: 1.5; margin-top: 0;">
+          엑셀에서 <b>[성명]</b> 열과 <b>[전화번호]</b> 열 영역을 마우스로 드래그하여 복사(<kbd>Ctrl</kbd>+<kbd>C</kbd>)한 뒤 아래에 그대로 붙여넣어 주세요. 
+        </p>
+        <textarea id="pasteInput" class="paste-area" placeholder="예시 입력 양식 (엑셀에서 복사해 오면 자동 정렬됩니다)&#10;홍길동&#9;010-1234-5678&#10;임꺽정&#9;010-9876-5432"></textarea>
+        <button class="btn-generate" onclick="generateRoster()">🚀 탑승 관리 페이지 생성</button>
+      </div>
+    </div>
+
+    <div id="page-admin" class="page">
+      <div id="roster-list" class="list"></div>
+      <div id="empty-msg" class="empty" style="display:none;">조건에 맞는 대상자가 없습니다.</div>
+    </div>
+
+  </div>
+
+<script>
+  let ROSTER_DATA = [];
+  let CURRENT_TAB = "all";
+
+  // 페이지 구동 시 기존에 하던 내역이 브라우저에 남아있으면 바로 복구함
+  window.onload = function() {
+    const saved = localStorage.getItem("SHUTTLE_ROSTER");
+    if(saved) {
+      ROSTER_DATA = JSON.parse(saved);
+      switchToAdminView();
+    }
+  }
+
+  // [핵심] 엑셀에서 복사한 데이터를 파싱하여 명단 생성
+  function generateRoster() {
+    const rawText = document.getElementById("pasteInput").value.trim();
+    if(!rawText) return alert("엑셀에서 복사한 명단을 붙여넣어 주세요.");
+
+    const lines = rawText.split("\n");
+    const parsedData = [];
+    let idCounter = 1;
+
+    lines.forEach(line => {
+      if(!line.trim()) return;
+      // 엑셀 복사 시 열 구별자는 탭('\t')입니다. 탭이나 콤마 등으로 분리합니다.
+      const tokens = line.split(/\t|,/);
+      
+      let name = tokens[0] ? tokens[0].trim() : "";
+      let phone = tokens[1] ? tokens[1].trim() : "";
+
+      // 만약 이름 칸에 이름과 전화번호가 같이 들어왔거나 열이 밀린 경우 방어 코드
+      if(!phone && tokens.length === 1) {
+        // 공백으로 분리 시도
+        const spaceTokens = name.split(/\s+/);
+        if(spaceTokens.length >= 2) {
+          name = spaceTokens[0];
+          phone = spaceTokens[1];
+        }
+      }
+
+      if(name) {
+        parsedData.push({
+          id: idCounter++,
+          name: name,
+          phone: phone || "전화번호 없음",
+          arrived: false,
+          status: "",
+          memo: ""
+        });
+      }
+    });
+
+    if(parsedData.length === 0) {
+      return alert("올바른 명단 형식을 찾을 수 없습니다. 이름과 연락처를 확인해 주세요.");
+    }
+
+    ROSTER_DATA = parsedData;
+    saveToStorage();
+    switchToAdminView();
+  }
+
+  // 화면을 관리자 모드로 전환
+  function switchToAdminView() {
+    document.getElementById("page-setup").classList.remove("active");
+    document.getElementById("page-admin").classList.add("active");
+    
+    document.getElementById("controlPanel").style.display = "flex";
+    document.getElementById("resetBtn").style.display = "block";
+    
+    renderRoster();
+  }
+
+  // 데이터 변경 시 자동 로컬 저장 (새로고침 방어)
+  function saveToStorage() {
+    localStorage.setItem("SHUTTLE_ROSTER", JSON.stringify(ROSTER_DATA));
+  }
+
+  // 필터 탭 제어
+  function filterTab(tabType) {
+    CURRENT_TAB = tabType;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById(`tab-${tabType}`).classList.add('active');
+    renderRoster();
+  }
+
+  // [화면 출력 및 실시간 정렬/검색]
+  function renderRoster() {
+    const keyword = document.getElementById("searchKeyword").value.trim().toLowerCase();
+    let rows = ROSTER_DATA.slice();
+
+    // 상단 요약 카운트 계산
+    const total = ROSTER_DATA.length;
+    const arrived = ROSTER_DATA.filter(r => !r.status && r.arrived).length;
+    const notArrived = ROSTER_DATA.filter(r => !r.status && !r.arrived).length;
+    const canceled = ROSTER_DATA.filter(r => !!r.status).length;
+
+    document.getElementById("cntAll").textContent = total;
+    document.getElementById("cntArrived").textContent = arrived;
+    document.getElementById("cntNotArrived").textContent = notArrived;
+    document.getElementById("cntCanceled").textContent = canceled;
+    document.getElementById("summaryText").textContent = `전체 ${total}명 · 도착 ${arrived}명 · 미도착 ${notArrived}명 · 취소/개별 ${canceled}명`;
+
+    // 1) 검색어 필터
+    if(keyword) {
+      rows = rows.filter(r => (r.name + r.phone).toLowerCase().includes(keyword));
+    }
+
+    // 2) 탭 필터
+    if (CURRENT_TAB === "arrived") rows = rows.filter(r => !r.status && r.arrived);
+    else if (CURRENT_TAB === "notArrived") rows = rows.filter(r => !r.status && !r.arrived);
+    else if (CURRENT_TAB === "canceled") rows = rows.filter(r => !!r.status);
+
+    // 3) 자동 셔플 정렬 (미도착자 최상단 배치 -> 그 다음 도착자 -> 취소자 맨 밑 / 동률일 땐 가나다순)
+    rows.sort((a, b) => {
+      const getRank = r => !!r.status ? 2 : (r.arrived ? 1 : 0);
+      return getRank(a) !== getRank(b) ? getRank(a) - getRank(b) : a.name.localeCompare(b.name, "ko");
+    });
+
+    const listEl = document.getElementById("roster-list");
+    const emptyEl = document.getElementById("empty-msg");
+
+    if(!rows.length) {
+      listEl.innerHTML = "";
+      emptyEl.style.display = "block";
+      return;
+    }
+    emptyEl.style.display = "none";
+
+    listEl.innerHTML = rows.map((r, idx) => {
+      let badgeHtml = `<span class="status-badge status-none">⭕ 미도착</span>`;
+      if (r.status) badgeHtml = `<span class="status-badge status-cancel">⛔ ${r.status}</span>`;
+      else if (r.arrived) badgeHtml = `<span class="status-badge status-arrived">✅ 도착</span>`;
+
+      return `
+        <div class="roster-card ${r.status ? 'canceled' : ''}">
+          <div class="roster-header">
+            <div class="roster-title">
+              <span class="badge-no">${idx + 1}</span>
+              <span class="user-name">${escapeHtml(r.name)}</span>
+            </div>
+            ${badgeHtml}
+          </div>
+          <div>📱 연락처: <a href="tel:${r.phone.replace(/[^\d]/g, '')}" class="phone-link">${escapeHtml(r.phone)}</a></div>
+          
+          <div class="grid-action">
+            <div class="action-item">
+              <label>도착확인</label>
+              <input type="checkbox" ${r.arrived ? 'checked' : ''} ${r.status ? 'disabled' : ''} onchange="updateArrived(${r.id}, this.checked)" />
+            </div>
+            <div class="action-item">
+              <label>상태변경</label>
+              <select onchange="updateStatus(${r.id}, this.value)">
+                <option value="" ${!r.status ? 'selected' : ''}>선택 없음</option>
+                <option value="교육취소" ${r.status === '교육취소' ? 'selected' : ''}>교육취소</option>
+                <option value="개별이동" ${r.status === '개별이동' ? 'selected' : ''}>개별이동</option>
+              </select>
+            </div>
+            <div class="action-item">
+              <label>비고(메모)</label>
+              <textarea style="padding:4px; height:24px; resize:none;" oninput="updateMemo(${r.id}, this.value)">${escapeHtml(r.memo || '')}</textarea>
+            </div>
+          </div>
+        </div>
+      `;
+    }).join("");
+  }
+
+  // 실시간 상태 업데이트 함수들
+  function updateArrived(id, isChecked) {
+    const target = ROSTER_DATA.find(x => x.id === id);
+    if(target) target.arrived = isChecked;
+    saveToStorage();
+    renderRoster();
+  }
+
+  function updateStatus(id, value) {
+    const target = ROSTER_DATA.find(x => x.id === id);
+    if(target) {
+      target.status = value;
+      if(value) target.arrived = false; // 취소 처리 시 도착 해제
+    }
+    saveToStorage();
+    renderRoster();
+  }
+
+  function updateMemo(id, value) {
+    const target = ROSTER_DATA.find(x => x.id === id);
+    if(target) target.memo = value;
+    saveToStorage(); // 메모는 타이핑 칠 때마다 내부 저장소에 기록
+  }
+
+  // 시스템 초기화 (새로운 차수의 교육 명단을 넣을 때 사용)
+  function resetSystem() {
+    if(!confirm("현재 체크 중인 명단을 지우고, 새로운 엑셀 명단을 복사해 오시겠습니까?")) return;
+    localStorage.removeItem("SHUTTLE_ROSTER");
+    ROSTER_DATA = [];
+    
+    document.getElementById("pasteInput").value = "";
+    document.getElementById("searchKeyword").value = "";
+    CURRENT_TAB = "all";
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.getElementById("tab-all").classList.add('active');
+
+    document.getElementById("page-admin").classList.remove("active");
+    document.getElementById("page-setup").classList.add("active");
+    document.getElementById("controlPanel").style.display = "none";
+    document.getElementById("resetBtn").style.display = "none";
+    document.getElementById("summaryText").textContent = "엑셀 데이터를 붙여넣어 관리 페이지를 생성하세요.";
+  }
+
+  function escapeHtml(str) {
+    return String(str ?? "").replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
+  }
+</script>
+</body>
+</html>
